@@ -4,50 +4,53 @@
 // Entry point for PeerBox Server
 // Runs on port 8888
 //=================================================================
-const express = require('express');
 require('dotenv').config(); // Load Environment Variables from .env
-const mysql = require('mysql/promise');
+const express = require('express');
+const mysql = require('mysql2/promise');
+const helmet = require('helmet');
+const cors = require('cors');
 
-// Import routes here
+// Import routes
 
-// Server connection port
-const HOST = 'localhost';
-const PORT = 8888;
-
-// Server Initialization
+// Server Configs
 const app = express();
+const HOST = 'localhost';
+const PORT = process.env.PORT || 8888; // Server port
+let db;
 
-// Middleware
-app.use(express.json());
-
-// Database Connection Setup
-(async () => {
+// Setup database connection
+(async() => {
 	try {
-        	const db = await mysql.createConnection({
-			host: process.env.RDS_HOST,
-			user: process.env.RDS_USER,
-			password: process.env.RDS_PASSWORD,
-			database: process.env.RDS_NAME
-		});
-
-		console.log("Successful connection to Amazon RDS:  pb-rds-database");
-
-		// Starter Endpoint
-		app.get("/", (req, res) => {
-        		res.json("Welcome to the PeerBox Server!");
+		db = await mysql.createConnection({
+			host: process.env.DB_HOST,
+			user: process.env.DB_USER,
+			password: process.env.DB_PASSWORD,
+			database: process.env.DB_NAME
 		});
 		
-		// Future Routes here
-
-		// Start Server
-		app.listen(PORT, () => {
-        		console.log(`Server is running at http://${HOST}:${PORT}`);
-		});
+		console.log('Connected to Amazon RDS: pb-rds-database');
 	} catch (err) {
-
-		console.error("Error connecting to the database:", err);
+		console.error('Error connecting to database:', err);
 	}
 })();
+
+// Middleware
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Starter Endpoint
+app.get('/', (req, res) => {
+	res.json("Welcome to the PeerBox Server!");
+})
+
+// Routes
+
+// Start Server
+app.listen(PORT, () => {
+	console.log(`Server is running at http://${HOST}:${PORT}`);
+});
 
 //module.exports = app;
 
